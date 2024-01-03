@@ -24,9 +24,3 @@ Time:   |----|----|----|----|----|----|----|----|----|----|----|----|----|----|-
 - **T1:** Task 1 execution (300 prints, short delay between each).
 - **T2:** Task 2 execution (10 prints, 1-second intervals).
 - **T3:** Task 3 execution (10 prints, 100 ms delay between each), starting 1 second after initialization.
-
-```
-
-```
-
-Feel free to customize this Markdown file according to your preferences and specific requirements.
