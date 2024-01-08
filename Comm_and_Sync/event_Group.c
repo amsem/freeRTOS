@@ -1,103 +1,70 @@
-#include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
+#include <freertos/timers.h>
+#include <stdio.h>
 #include <freertos/event_groups.h>
-#include <driver/gpio.h>
 
-#define GPIO_BTN1 GPIO_NUM_22
-#define GPIO_BTN2 GPIO_NUM_23
+#define BTN1_PIN 22
+#define BTN2_PIN 23
 
-#define BIT_BTN1 (1 << 0)
-#define BIT_BTN2 (1 << 1)
+EventGroupHandle_t buttonEventGroup;
 
-EventGroupHandle_t btnEventGroup;
+#define BTN1_BIT (1 << 0)
+#define BTN2_BIT (1 << 1)
 
-void BTN1_Task(void *pvParameters)
+void BTN1_Task(void *param)
 {
     while (1)
     {
-        EventBits_t bits = xEventGroupWaitBits(btnEventGroup, BIT_BTN1, pdTRUE, pdFALSE, portMAX_DELAY);
-
-        if ((bits & BIT_BTN1) != 0)
+        if (xEventGroupWaitBits(buttonEventGroup, BTN1_BIT, pdTRUE, pdFALSE, portMAX_DELAY))
         {
-            printf("BTN1 pressed\n");
+            printf("Appui sur BTN1 détecté\n");
         }
     }
 }
 
-void BTN2_Task(void *pvParameters)
+void BTN2_Task(void *param)
 {
     while (1)
     {
-        EventBits_t bits = xEventGroupWaitBits(btnEventGroup, BIT_BTN2, pdTRUE, pdFALSE, portMAX_DELAY);
-
-        if ((bits & BIT_BTN2) != 0)
+        if (xEventGroupWaitBits(buttonEventGroup, BTN2_BIT, pdTRUE, pdFALSE, portMAX_DELAY))
         {
-            printf("BTN2 pressed\n");
+            printf("Appui sur BTN2 détecté\n");
         }
     }
 }
 
-void BTN_SIM_Task(void *pvParameters)
+void BTN_SIM_Task(void *param)
 {
     while (1)
     {
-        EventBits_t bits = xEventGroupWaitBits(btnEventGroup, (BIT_BTN1 | BIT_BTN2), pdTRUE, pdFALSE, portMAX_DELAY);
-
-        if ((bits & (BIT_BTN1 | BIT_BTN2)) == (BIT_BTN1 | BIT_BTN2))
+        if (xEventGroupWaitBits(buttonEventGroup, (BTN1_BIT | BTN2_BIT), pdTRUE, pdFALSE, portMAX_DELAY))
         {
-            printf("Both BTN1 and BTN2 pressed simultaneously\n");
+            printf("Appui simultané sur BTN1 et BTN2 détecté\n");
         }
     }
 }
 
-void buttonTask(void *pvParameters)
+void buttonTimerCallback(TimerHandle_t xTimer)
 {
-    while (1)
-    {
-        if (gpio_get_level(GPIO_BTN1) == 0)
-        {
-            // BTN1 pressed
-            xEventGroupSetBits(btnEventGroup, BIT_BTN1);
-        }
-
-        if (gpio_get_level(GPIO_BTN2) == 0)
-        {
-            // BTN2 pressed
-            xEventGroupSetBits(btnEventGroup, BIT_BTN2);
-        }
-
-        vTaskDelay(10 / portTICK_PERIOD_MS); // Check buttons every 10ms
-    }
+    // Simuler l'appui sur les boutons à intervalles réguliers
+    xEventGroupSetBits(buttonEventGroup, BTN1_BIT);
+    vTaskDelay(pdMS_TO_TICKS(50)); // Délai pour simuler un appui sur un autre bouton après 50ms
+    xEventGroupSetBits(buttonEventGroup, BTN2_BIT);
 }
 
 void app_main()
 {
-    // Initialize the Event Group
-    btnEventGroup = xEventGroupCreate();
+    // Créer le groupe d'événements
+    buttonEventGroup = xEventGroupCreate();
 
-    // Configure GPIOs for buttons
-    gpio_config_t btn1_conf = {
-        .pin_bit_mask = (1ULL << GPIO_BTN1),
-        .mode = GPIO_MODE_INPUT,
-        .intr_type = GPIO_INTR_ANYEDGE,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-    };
+    // Créer les tâches
+    xTaskCreate(&BTN1_Task, "BTN1_Task", 2048, NULL, 1, NULL);
+    xTaskCreate(&BTN2_Task, "BTN2_Task", 2048, NULL, 1, NULL);
+    xTaskCreate(&BTN_SIM_Task, "BTN_SIM_Task", 2048, NULL, 1, NULL);
 
-    gpio_config_t btn2_conf = {
-        .pin_bit_mask = (1ULL << GPIO_BTN2),
-        .mode = GPIO_MODE_INPUT,
-        .intr_type = GPIO_INTR_ANYEDGE,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-    };
-
-    gpio_config(&btn1_conf);
-    gpio_config(&btn2_conf);
-
-    // Create tasks for button handling
-    xTaskCreate(BTN1_Task, "BTN1_Task", 2048, NULL, 5, NULL);
-    xTaskCreate(BTN2_Task, "BTN2_Task", 2048, NULL, 5, NULL);
-    xTaskCreate(BTN_SIM_Task, "BTN_SIM_Task", 2048, NULL, 5, NULL);
-    xTaskCreate(buttonTask, "ButtonTask", 2048, NULL, 5, NULL);
+    // Créer et démarrer la minuterie pour simuler l'appui sur les boutons
+    TimerHandle_t buttonTimer = xTimerCreate("ButtonTimer", pdMS_TO_TICKS(1000), pdTRUE, 0, buttonTimerCallback);
+    xTimerStart(buttonTimer, 0);
 }
