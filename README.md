@@ -18,9 +18,9 @@ This repository contains code developed during my master's real-time systems cou
 
 ## Code Structure
 
-- **/TaskManagement:** Code snippets and implementations related to task states and management.
-- **/CommunicationSynchronization:** Examples showcasing communication and synchronization using different methods.
-- **/ESP32Connectivity:** Code for configuring ESP32 as a hotspot, connecting to WiFi, and making HTTP requests.
+- **/tasks:** Code snippets and implementations related to task states and management.
+- **/Comm_and_Sync:** Examples showcasing communication and synchronization using different methods.
+- **/WIFI_HTTP:** Code for configuring ESP32 as a hotspot, connecting to WiFi, and making HTTP requests.
 
 ## Usage
 
